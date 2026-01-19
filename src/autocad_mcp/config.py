@@ -6,7 +6,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class Config:
     output: OutputConfig = field(default_factory=OutputConfig)
 
     @classmethod
-    def from_dict(cls, data: dict) -> Config:
+    def from_dict(cls, data: dict[str, Any]) -> Config:
         """Create Config from dictionary."""
         server_data = data.get("server", {})
         cad_data = data.get("cad", {})

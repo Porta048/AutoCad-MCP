@@ -400,9 +400,17 @@ class NLPProcessor:
 
         if radius_match:
             params["radius"] = float(radius_match.group(1))
-        elif numbers:
-            # Use last number as radius (first might be coordinates)
-            params["radius"] = numbers[-1] if len(numbers) > len(coords) * 2 else 50
+        elif coords and len(numbers) > 2:
+            # Filter out coordinate numbers (2 per coordinate) and use remaining as radius
+            coord_numbers = len(coords) * 2
+            remaining_numbers = numbers[coord_numbers:]
+            if remaining_numbers:
+                params["radius"] = remaining_numbers[0]
+            else:
+                params["radius"] = 50
+        elif not coords and numbers:
+            # No coordinates, use first number as radius
+            params["radius"] = numbers[0]
         else:
             params["radius"] = 50
 
@@ -483,8 +491,8 @@ class NLPProcessor:
             }
 
         # Try width/height
-        width = 100
-        height = 50
+        width: float = 100.0
+        height: float = 50.0
 
         width_match = re.search(r"width\s*[=:]?\s*(\d+\.?\d*)", text, re.IGNORECASE)
         if width_match:

@@ -137,12 +137,13 @@ class CADController:
         Returns:
             COM VARIANT array suitable for CAD methods.
         """
+        from array import array
         import pythoncom
         import win32com.client
 
         return win32com.client.VARIANT(
             pythoncom.VT_ARRAY | pythoncom.VT_R8,
-            points
+            array("d", points)
         )
 
     def start(self) -> bool:
@@ -466,14 +467,20 @@ class CADController:
             center_3d = _ensure_3d_point(center)
             center_var = self._create_variant_array(list(center_3d))
 
+            if major_axis <= 0:
+                return {"success": False, "error": f"major_axis must be positive, got {major_axis}"}
+            
+            if minor_axis < 0:
+                return {"success": False, "error": f"minor_axis must be non-negative, got {minor_axis}"}
+
             # Calculate major axis endpoint
             rotation_rad = math.radians(rotation)
             major_x = major_axis * math.cos(rotation_rad)
             major_y = major_axis * math.sin(rotation_rad)
             major_axis_var = self._create_variant_array([major_x, major_y, 0.0])
 
-            # Ratio of minor to major axis
-            ratio = minor_axis / major_axis if major_axis != 0 else 1.0
+            # Ratio of minor to major axis (0-1)
+            ratio = min(1.0, minor_axis / major_axis) if major_axis > 0 else 0.0
 
             ellipse = self.model_space.AddEllipse(center_var, major_axis_var, ratio)
             self._apply_entity_properties(ellipse, layer, color, lineweight)
@@ -577,11 +584,11 @@ class CADController:
         c2 = _ensure_3d_point(corner2)
 
         # Create 4 corners
-        points = [
-            (c1[0], c1[1], 0.0),
-            (c2[0], c1[1], 0.0),
-            (c2[0], c2[1], 0.0),
-            (c1[0], c2[1], 0.0),
+        points: list[tuple[float, ...]] = [
+            (c1[0], c1[1], c1[2]),
+            (c2[0], c1[1], c1[2]),
+            (c2[0], c2[1], c2[2]),
+            (c1[0], c2[1], c2[2]),
         ]
 
         result = self.draw_polyline(points, closed=True, layer=layer, color=color, lineweight=lineweight)
@@ -676,18 +683,23 @@ class CADController:
             if not boundary_result["success"]:
                 return boundary_result
 
+            # Get the polyline reference immediately after creation
+            polyline = self.model_space.Item(self.model_space.Count - 1)
+
             # Create hatch
-            # PatternType: 0=User, 1=Predefined, 2=Custom
-            hatch = self.model_space.AddHatch(1, pattern_name, True)
+            # PatternType: 0=User-defined (for SOLID), 1=Predefined, 2=Custom
+            # Use 0 for SOLID and other user patterns, 1 for predefined patterns like ANSI31
+            pattern_type = 1 if pattern_name.upper() != "SOLID" else 0
+            hatch = self.model_space.AddHatch(pattern_type, pattern_name, True)
             hatch.PatternScale = pattern_scale
 
-            # Get the last added entity (the polyline)
-            polyline = self.model_space.Item(self.model_space.Count - 2)
-
-            # Create outer loop from polyline
-            outer_loop = [polyline]
+            # Create outer loop from polyline - must use proper COM array format
+            import pythoncom
             import win32com.client
-            outer_array = win32com.client.VARIANT(0x2009, outer_loop)  # VT_ARRAY | VT_DISPATCH
+            outer_array = win32com.client.VARIANT(
+                pythoncom.VT_ARRAY | pythoncom.VT_DISPATCH,
+                [polyline]
+            )
             hatch.AppendOuterLoop(outer_array)
 
             hatch.Evaluate()

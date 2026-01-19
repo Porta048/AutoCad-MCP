@@ -99,8 +99,14 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw a line."""
+        if len(start) < 2 or len(end) < 2:
+            return {"success": False, "error": "Coordinates must have at least 2 values"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_line(
             tuple(start), tuple(end), layer, color, lineweight
@@ -120,8 +126,17 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw a circle."""
+        if len(center) < 2:
+            return {"success": False, "error": "Center must have at least 2 coordinates"}
+        
+        if radius <= 0:
+            return {"success": False, "error": "Radius must be positive"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_circle(
             tuple(center), radius, layer, color, lineweight
@@ -143,8 +158,17 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw an arc."""
+        if len(center) < 2:
+            return {"success": False, "error": "Center must have at least 2 coordinates"}
+        
+        if radius <= 0:
+            return {"success": False, "error": "Radius must be positive"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_arc(
             tuple(center), radius, start_angle, end_angle, layer, color, lineweight
@@ -166,8 +190,20 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw an ellipse."""
+        if len(center) < 2:
+            return {"success": False, "error": "Center must have at least 2 coordinates"}
+        
+        if major_axis <= 0:
+            return {"success": False, "error": "Major axis must be positive"}
+        
+        if minor_axis < 0:
+            return {"success": False, "error": "Minor axis must be non-negative"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_ellipse(
             tuple(center), major_axis, minor_axis, rotation, layer, color, lineweight
@@ -187,8 +223,18 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw a polyline."""
+        if len(points) < 2:
+            return {"success": False, "error": "Polyline requires at least 2 points"}
+        
+        for i, pt in enumerate(points):
+            if len(pt) < 2:
+                return {"success": False, "error": f"Point {i} must have at least 2 coordinates"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         tuple_points = [tuple(p) for p in points]
         result = self.controller.draw_polyline(
@@ -209,8 +255,14 @@ class CADService:
         lineweight: int | None = None,
     ) -> dict[str, Any]:
         """Draw a rectangle."""
+        if len(corner1) < 2 or len(corner2) < 2:
+            return {"success": False, "error": "Corners must have at least 2 coordinates"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_rectangle(
             tuple(corner1), tuple(corner2), layer, color, lineweight
@@ -231,8 +283,20 @@ class CADService:
         color: int | None = None,
     ) -> dict[str, Any]:
         """Draw text."""
+        if len(position) < 2:
+            return {"success": False, "error": "Position must have at least 2 coordinates"}
+        
+        if not text:
+            return {"success": False, "error": "Text cannot be empty"}
+        
+        if height <= 0:
+            return {"success": False, "error": "Height must be positive"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.draw_text(
             tuple(position), text, height, rotation, layer, color
@@ -252,8 +316,24 @@ class CADService:
         color: int | None = None,
     ) -> dict[str, Any]:
         """Draw a hatch pattern."""
+        if len(boundary_points) < 3:
+            return {"success": False, "error": "Hatch requires at least 3 boundary points"}
+        
+        for i, pt in enumerate(boundary_points):
+            if len(pt) < 2:
+                return {"success": False, "error": f"Point {i} must have at least 2 coordinates"}
+        
+        if not pattern_name:
+            return {"success": False, "error": "Pattern name cannot be empty"}
+        
+        if pattern_scale <= 0:
+            return {"success": False, "error": "Pattern scale must be positive"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         tuple_points = [tuple(p) for p in boundary_points]
         result = self.controller.draw_hatch(
@@ -274,8 +354,14 @@ class CADService:
         color: int | None = None,
     ) -> dict[str, Any]:
         """Add a linear dimension."""
+        if len(start) < 2 or len(end) < 2 or len(text_position) < 2:
+            return {"success": False, "error": "All points must have at least 2 coordinates"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
+
+        if color is not None and (color < 0 or color > 255):
+            return {"success": False, "error": "Color must be between 0 and 255"}
 
         result = self.controller.add_dimension(
             tuple(start), tuple(end), tuple(text_position), layer, color
@@ -288,6 +374,12 @@ class CADService:
 
     def save_drawing(self, file_path: str) -> dict[str, Any]:
         """Save the drawing."""
+        if not file_path:
+            return {"success": False, "error": "File path cannot be empty"}
+        
+        if not file_path.strip():
+            return {"success": False, "error": "File path cannot be whitespace"}
+        
         if not self.ensure_initialized():
             return {"success": False, "error": "CAD not initialized"}
 
