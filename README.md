@@ -4,6 +4,8 @@ Server MCP per controllare AutoCAD tramite Claude Desktop con linguaggio natural
 
 <img src="img/schema.png" alt="Schema" width="400">
 
+Documentazione in inglese: [readme-eng.md](readme-eng.md)
+
 ## Requisiti
 
 - **Windows** (COM interface)
